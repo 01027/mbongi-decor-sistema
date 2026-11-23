@@ -1,0 +1,323 @@
+
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mbongi Decor | Gestão Empresarial</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--blue:#123b5d;--gold:#c79b45;--bg:#f3f5f8;--white:#fff;--text:#243447}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
+header{background:var(--blue);color:white;padding:18px}
+header h2{margin:0 0 5px}
+header small{color:#e6c77e}
+main{max-width:1100px;margin:auto;padding:16px}
+.panel,.card{background:white;border-radius:12px;padding:16px;margin-bottom:15px;box-shadow:0 2px 9px #0000000c}
+nav{display:flex;gap:8px;overflow:auto;padding:12px 0}
+nav button{white-space:nowrap;border:0;background:white;color:var(--blue);padding:11px 14px;border-radius:8px;font-weight:bold}
+nav button.active{background:var(--blue);color:white}
+button{cursor:pointer}
+.primary{background:var(--gold);color:#172536;border:0;padding:12px 16px;border-radius:8px;font-weight:bold}
+.secondary{background:#e8edf2;color:var(--blue);border:0;padding:10px 13px;border-radius:8px}
+input,select,textarea{width:100%;padding:12px;margin:6px 0 12px;border:1px solid #ccd4dc;border-radius:7px;font:inherit}
+label{font-size:13px;font-weight:bold}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.metric{background:#f4f7fa;border-left:4px solid var(--gold);padding:15px;border-radius:8px}
+.metric strong{display:block;font-size:24px;margin-top:8px;color:var(--blue)}
+table{width:100%;border-collapse:collapse;min-width:560px}
+th,td{text-align:left;padding:11px;border-bottom:1px solid #e7ebef;font-size:13px}
+th{background:#f4f7fa}
+.tablewrap{overflow:auto}
+.item{border:1px solid #e3e8ed;padding:12px;border-radius:8px;margin:9px 0}
+.item strong{color:var(--blue)}
+.muted{color:#718096;font-size:13px}
+.hidden{display:none!important}
+#login{max-width:420px;margin:45px auto}
+#login h2{color:var(--blue)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.danger{background:#fbe8e8;color:#a22;border:0;padding:8px;border-radius:6px}
+footer{text-align:center;padding:25px;color:#718096;font-size:12px}
+</style>
+</head>
+<body>
+<header>
+<h2>MBONGI DECOR</h2>
+<small>Transformamos casas em lares com estilo</small>
+</header>
+
+<main>
+<section id="setup" class="panel hidden">
+<h3>Configuração da aplicação</h3>
+<p class="muted">Introduz os dados do teu projeto Supabase. Usa apenas a chave pública anon/publishable.</p>
+<label>URL do projeto Supabase</label>
+<input id="projectUrl" placeholder="https://xxxxxxxx.supabase.co">
+<label>Chave pública (anon ou publishable)</label>
+<input id="publicKey" placeholder="Chave pública do Supabase">
+<button class="primary" onclick="saveConfig()">Guardar configuração</button>
+</section>
+
+<section id="login" class="panel hidden">
+<h2>Bem-vindo à Mbongi Decor</h2>
+<p class="muted">Entra na tua conta para gerir a empresa.</p>
+<label>Email</label>
+<input id="email" type="email" placeholder="teuemail@exemplo.com">
+<label>Palavra-passe</label>
+<input id="password" type="password" placeholder="Palavra-passe">
+<div class="actions">
+<button class="primary" onclick="signIn()">Entrar</button>
+<button class="secondary" onclick="signUp()">Criar conta</button>
+</div>
+<p id="loginMessage" class="muted"></p>
+</section>
+
+<section id="app" class="hidden">
+<div class="panel">
+<div class="actions" style="justify-content:space-between;align-items:center">
+<div><strong id="userEmail"></strong><div class="muted">Sistema de gestão empresarial</div></div>
+<button class="secondary" onclick="signOut()">Sair</button>
+</div>
+</div>
+
+<nav id="navigation">
+<button class="active" onclick="showPage('dashboard',this)">Painel</button>
+<button onclick="showPage('crm',this)">CRM</button>
+<button onclick="showPage('tasks',this)">Tarefas</button>
+<button onclick="showPage('clients',this)">Clientes</button>
+<button onclick="showPage('works',this)">Obras</button>
+<button onclick="showPage('quotes',this)">Orçamentos</button>
+<button onclick="showPage('finance',this)">Finanças</button>
+</nav>
+
+<section id="dashboard" class="page">
+<div class="panel">
+<h3>Painel de controlo</h3>
+<p class="muted">Visão geral da atividade da Mbongi Decor.</p>
+<div class="grid">
+<div class="metric">Potenciais clientes<strong id="mLeads">0</strong></div>
+<div class="metric">Tarefas<strong id="mTasks">0</strong></div>
+<div class="metric">Clientes<strong id="mClients">0</strong></div>
+<div class="metric">Obras<strong id="mWorks">0</strong></div>
+<div class="metric">Orçamentos<strong id="mQuotes">0</strong></div>
+<div class="metric">Movimentos financeiros<strong id="mFinance">0</strong></div>
+</div>
+</div>
+<div class="panel">
+<h3>Objetivo comercial mensal</h3>
+<p>Meta de faturação: <strong>1.000.000 Kz</strong></p>
+<p class="muted">Acompanha as oportunidades, fecha contratos e regista as entradas financeiras.</p>
+</div>
+</section>
+
+<section id="crm" class="page hidden">
+<div class="panel">
+<h3>CRM | Gestão de potenciais clientes</h3>
+<p class="muted">Regista contactos, serviços pretendidos e estado da negociação.</p>
+<button class="primary" onclick="addLead()">+ Novo potencial cliente</button>
+<div id="leadsList"></div>
+</div>
+</section>
+
+<section id="tasks" class="page hidden">
+<div class="panel">
+<h3>Tarefas comerciais</h3>
+<button class="primary" onclick="addTask()">+ Nova tarefa</button>
+<div id="tasksList"></div>
+</div>
+</section>
+
+<section id="clients" class="page hidden">
+<div class="panel">
+<h3>Base de dados de clientes</h3>
+<button class="primary" onclick="addRecord('clients')">+ Novo cliente</button>
+<div id="clientsList"></div>
+</div>
+</section>
+
+<section id="works" class="page hidden">
+<div class="panel">
+<h3>Gestão de obras</h3>
+<button class="primary" onclick="addRecord('works')">+ Registar obra</button>
+<div id="worksList"></div>
+</div>
+</section>
+
+<section id="quotes" class="page hidden">
+<div class="panel">
+<h3>Gestão de orçamentos</h3>
+<button class="primary" onclick="addRecord('quotes')">+ Novo orçamento</button>
+<div id="quotesList"></div>
+</div>
+</section>
+
+<section id="finance" class="page hidden">
+<div class="panel">
+<h3>Gestão financeira</h3>
+<button class="primary" onclick="addRecord('finance')">+ Registar movimento</button>
+<div id="financeList"></div>
+</div>
+</section>
+</section>
+</main>
+
+<footer>Mbongi Decor Gestão Empresarial | Sistema interno</footer>
+
+<script>
+let db=null;
+let currentUser=null;
+
+const modules={
+clients:{name:"Cliente",fields:[
+["name","Nome do cliente"],["phone","Telefone"],["email","Email"],["location","Localização"],["notes","Observações"]
+]},
+works:{name:"Obra",fields:[
+["name","Nome ou descrição da obra"],["client","Cliente"],["location","Localização"],["value","Valor em Kz"],["status","Estado da obra"],["start","Data de início"],["end","Previsão de conclusão"],["notes","Observações"]
+]},
+quotes:{name:"Orçamento",fields:[
+["name","Título do orçamento"],["client","Cliente"],["value","Valor em Kz"],["status","Estado"],["date","Data"],["notes","Descrição/observações"]
+]},
+finance:{name:"Movimento financeiro",fields:[
+["type","Tipo: Entrada ou Saída"],["description","Descrição"],["category","Categoria"],["value","Valor em Kz"],["date","Data"],["notes","Observações"]
+]}
+};
+
+function el(id){return document.getElementById(id)}
+function msg(id,text){el(id).textContent=text}
+function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+
+function init(){
+ const url=localStorage.getItem("mbongi_url");
+ const key=localStorage.getItem("mbongi_key");
+ if(!url||!key){el("setup").classList.remove("hidden");return}
+ try{db=window.supabase.createClient(url,key);checkSession()}
+ catch(e){el("setup").classList.remove("hidden");alert("Verifica o URL e a chave pública.")}
+}
+function saveConfig(){
+ const url=el("projectUrl").value.trim();
+ const key=el("publicKey").value.trim();
+ if(!url.startsWith("https://")||!key){alert("Preenche o URL e a chave pública corretamente.");return}
+ localStorage.setItem("mbongi_url",url);
+ localStorage.setItem("mbongi_key",key);
+ location.reload();
+}
+async function checkSession(){
+ const {data,error}=await db.auth.getSession();
+ if(error){el("login").classList.remove("hidden");return}
+ if(data.session){currentUser=data.session.user;openApp()}
+ else el("login").classList.remove("hidden");
+}
+async function signIn(){
+ const email=el("email").value.trim(),password=el("password").value;
+ const {data,error}=await db.auth.signInWithPassword({email,password});
+ if(error){msg("loginMessage",error.message);return}
+ currentUser=data.user;openApp();
+}
+async function signUp(){
+ const email=el("email").value.trim(),password=el("password").value;
+ if(password.length<6){msg("loginMessage","A palavra-passe deve ter pelo menos 6 caracteres.");return}
+ const {data,error}=await db.auth.signUp({email,password});
+ if(error){msg("loginMessage",error.message);return}
+ msg("loginMessage","Conta criada. Se for solicitada confirmação por email, confirma-a antes de entrar.");
+}
+async function signOut(){await db.auth.signOut();location.reload()}
+function openApp(){
+ el("setup").classList.add("hidden");el("login").classList.add("hidden");el("app").classList.remove("hidden");
+ el("userEmail").textContent=currentUser.email||"Utilizador";
+ refreshAll();
+}
+function showPage(page,button){
+ document.querySelectorAll(".page").forEach(p=>p.classList.add("hidden"));
+ el(page).classList.remove("hidden");
+ document.querySelectorAll("#navigation button").forEach(b=>b.classList.remove("active"));
+ button.classList.add("active");
+}
+async function getRows(table){
+ const {data,error}=await db.from(table).select("*").order("created_at",{ascending:false});
+ if(error){console.error(error);return []}
+ return data||[];
+}
+async function refreshAll(){
+ await Promise.all([loadLeads(),loadTasks(),...Object.keys(modules).map(loadRecords)]);
+ updateMetrics();
+}
+async function loadLeads(){
+ const rows=await getRows("sales_leads");
+ el("leadsList").innerHTML=rows.length?rows.map(r=>`
+ <div class="item">
+ <strong>${escapeHtml(r.full_name)}</strong>
+ <p>${escapeHtml(r.phone||"Sem telefone")} | ${escapeHtml(r.service||"Sem serviço indicado")}</p>
+ <p class="muted">Estado: ${escapeHtml(r.stage||"Novo")} | ${escapeHtml(r.location||"")}</p>
+ <p>${escapeHtml(r.notes||"")}</p>
+ <button class="danger" onclick="deleteRow('sales_leads','${r.id}')">Eliminar</button>
+ </div>`).join(""):"<p class='muted'>Ainda não existem potenciais clientes.</p>";
+ el("mLeads").textContent=rows.length;
+}
+async function addLead(){
+ const full_name=prompt("Nome do potencial cliente:");
+ if(!full_name)return;
+ const phone=prompt("Telefone/WhatsApp:")||"";
+ const service=prompt("Serviço pretendido:")||"";
+ const location=prompt("Localização:")||"";
+ const estimated_value=Number(prompt("Valor estimado em Kz:")||0);
+ const stage="Novo";
+ const {error}=await db.from("sales_leads").insert({full_name,phone,service,location,estimated_value,stage,created_by:currentUser.id});
+ if(error){alert("Erro ao guardar: "+error.message);return}
+ await loadLeads();updateMetrics();
+}
+async function loadTasks(){
+ const rows=await getRows("commercial_tasks");
+ el("tasksList").innerHTML=rows.length?rows.map(r=>`
+ <div class="item"><strong>${escapeHtml(r.title)}</strong>
+ <p class="muted">Prazo: ${escapeHtml(r.due_date||"Não definido")} | Prioridade: ${escapeHtml(r.priority||"Normal")}</p>
+ <p>Estado: ${escapeHtml(r.status||"Pendente")}</p>
+ <button class="danger" onclick="deleteRow('commercial_tasks','${r.id}')">Eliminar</button></div>`).join(""):"<p class='muted'>Ainda não existem tarefas.</p>";
+ el("mTasks").textContent=rows.length;
+}
+async function addTask(){
+ const title=prompt("Descrição da tarefa:");
+ if(!title)return;
+ const due_date=prompt("Data limite (AAAA-MM-DD):")||null;
+ const priority=prompt("Prioridade (Baixa, Normal ou Alta):")||"Normal";
+ const {error}=await db.from("commercial_tasks").insert({title,due_date,priority,status:"Pendente",created_by:currentUser.id});
+ if(error){alert("Erro ao guardar: "+error.message);return}
+ await loadTasks();updateMetrics();
+}
+async function loadRecords(module){
+ const rows=await getRows("business_records");
+ const mine=rows.filter(r=>r.module===module);
+ const target=module+"List";
+ el(target).innerHTML=mine.length?mine.map(r=>{
+ const data=r.data||{};
+ return `<div class="item"><strong>${escapeHtml(data.name||data.description||data.type||modules[module].name)}</strong>
+ ${Object.entries(data).map(([k,v])=>`<p class="muted">${escapeHtml(k)}: ${escapeHtml(v)}</p>`).join("")}
+ <button class="danger" onclick="deleteRow('business_records','${r.id}')">Eliminar</button></div>`;
+ }).join(""):"<p class='muted'>Ainda não existem registos.</p>";
+}
+async function addRecord(module){
+ const data={};
+ for(const [key,label] of modules[module].fields){
+ const value=prompt(label+":");
+ if(value===null)return;
+ data[key]=value;
+ }
+ const {error}=await db.from("business_records").insert({module,data,user_id:currentUser.id});
+ if(error){alert("Erro ao guardar: "+error.message);return}
+ await loadRecords(module);updateMetrics();
+}
+async function deleteRow(table,id){
+ if(!confirm("Tens a certeza de que pretendes eliminar este registo?"))return;
+ const {error}=await db.from(table).delete().eq("id",id);
+ if(error){alert("Não foi possível eliminar: "+error.message);return}
+ await refreshAll();
+}
+async function updateMetrics(){
+ for(const [module,id] of [["clients","mClients"],["works","mWorks"],["quotes","mQuotes"],["finance","mFinance"]]){
+ const rows=await getRows("business_records");
+ el(id).textContent=rows.filter(r=>r.module===module).length;
+ }
+}
+init();
+</script>
+</body>
+</html>
